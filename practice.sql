@@ -344,3 +344,46 @@ $$
 language plpgsql;
 
 select * from connect_cancion(1,16);
+
+
+
+create or replace function update_project_type(
+	project_to_replace_name 	proyectos.nombre_proy%type,
+	proyect_type_source_name	proyectos.nombre_proy%type
+) returns setof proyectos	as $$
+	
+	declare
+	temp_type proyectos.tipo_proyecto%type;
+    temp_project proyectos;
+	begin
+-- 	check existence
+		if (
+			not exists (
+				select * from proyectos where proyectos.nombre_proy = project_to_replace_name
+			) 
+			or 
+			not exists (
+				select * from proyectos where proyectos.nombre_proy = proyect_type_source_name
+			)
+		) then
+			raise exception 'Alguno o ambos proyectos no se encuentran en la db';
+		
+		end if;
+		
+-- 		save project type
+		select p.tipo_proyecto into temp_type from proyectos p where p.nombre_proy = proyect_type_source_name;
+		
+-- 		update
+		update proyectos 
+		set tipo_proyecto = temp_type 
+		where proyectos.nombre_proy = project_to_replace_name;
+		
+		select * into temp_project from proyectos 
+		where proyectos.nombre_proy = project_to_replace_name;
+		
+		return next temp_project;
+		
+		
+	end;
+
+$$ language plpgsql;
